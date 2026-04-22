@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAIGAN 포트폴리오 대시보드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh;padding:20px 32px}
+  h1{font-size:20px;font-weight:500;margin-bottom:4px}
+  .subtitle{font-size:12px;color:#888;margin-bottom:4px}
+  .updated{font-size:10px;color:#aaa;margin-bottom:16px}
+  .tab-row{display:flex;gap:8px;margin-bottom:24px}
+  .tab-btn{cursor:pointer;padding:7px 20px;font-size:14px;border:0.5px solid #bbb;background:transparent;color:#666;border-radius:8px;transition:all .15s}
+  .tab-btn.active{background:#e8e8e4;color:#1a1a1a;font-weight:500;border-color:#999}
+  .tab-btn:hover{background:#eee}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .metric-card{background:#ebebea;border-radius:10px;padding:16px 20px}
+  .metric-label{font-size:13px;color:#666;margin-bottom:6px}
+  .metric-value{font-size:26px;font-weight:500}
+  .metric-sub{font-size:13px;margin-top:4px;color:#888}
+  .pos{color:#e24b4a}.neg{color:#378add}
+  .section-title{font-size:14px;font-weight:500;color:#666;margin-bottom:12px}
+  .stock-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:0.5px solid #ddd}
+  .stock-code{font-size:12px;color:#999;min-width:72px}
+  .stock-name{font-size:14px;color:#1a1a1a;min-width:130px}
+  .bar-bg{flex:1;height:8px;background:#ddd;border-radius:4px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:4px}
+  .stock-ret{font-size:14px;font-weight:500;min-width:60px;text-align:right}
+  .chart-wrap{position:relative;height:320px}
+  .compare-wrap{position:relative;height:380px}
+  .legend{display:flex;gap:20px;margin-top:12px;font-size:13px;color:#666}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .legend-dot{width:12px;height:12px;border-radius:2px}
+  .container{max-width:100%;margin:0 auto;background:#fff;border-radius:14px;padding:32px 40px;border:0.5px solid #ddd}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>TAIGAN 포트폴리오 대시보드</h1>
+  <p class="subtitle">04/13 → 04/21&nbsp;|&nbsp;F6 · F6_HD</p>
+  <p class="updated">마지막 갱신: 2026-04-22 01:58:52</p>
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('F6')">F6</button>
+    <button class="tab-btn" onclick="switchTab('F6_HD')">F6_HD</button>
+    <button class="tab-btn" onclick="switchTab('compare')">비교</button>
+  </div>
+  <div id="tab-F6">
+    <div class="grid-4">
+      <div class="metric-card"><p class="metric-label">포트폴리오 수익률</p><p class="metric-value pos" id="f6-total">-</p><p class="metric-sub">기간 단순평균</p></div>
+      <div class="metric-card"><p class="metric-label">최고 종목</p><p class="metric-value" id="f6-best" style="font-size:16px">-</p><p class="metric-sub pos" id="f6-best-ret">-</p></div>
+      <div class="metric-card"><p class="metric-label">최저 종목</p><p class="metric-value" id="f6-worst" style="font-size:16px">-</p><p class="metric-sub neg" id="f6-worst-ret">-</p></div>
+      <div class="metric-card"><p class="metric-label">상승 / 하락</p><p class="metric-value" id="f6-updown">-</p><p class="metric-sub">종목 수</p></div>
+    </div>
+    <div class="grid-2">
+      <div><p class="section-title">종목별 수익률</p><div id="f6-bars"></div></div>
+      <div><p class="section-title">일별 평균 수익률 추이</p><div class="chart-wrap"><canvas id="f6-line" role="img" aria-label="F6 일별 수익률"></canvas></div></div>
+    </div>
+  </div>
+  <div id="tab-F6_HD" style="display:none">
+    <div class="grid-4">
+      <div class="metric-card"><p class="metric-label">포트폴리오 수익률</p><p class="metric-value pos" id="hd-total">-</p><p class="metric-sub">기간 단순평균</p></div>
+      <div class="metric-card"><p class="metric-label">최고 종목</p><p class="metric-value" id="hd-best" style="font-size:16px">-</p><p class="metric-sub pos" id="hd-best-ret">-</p></div>
+      <div class="metric-card"><p class="metric-label">최저 종목</p><p class="metric-value" id="hd-worst" style="font-size:16px">-</p><p class="metric-sub neg" id="hd-worst-ret">-</p></div>
+      <div class="metric-card"><p class="metric-label">상승 / 하락</p><p class="metric-value" id="hd-updown">-</p><p class="metric-sub">종목 수</p></div>
+    </div>
+    <div class="grid-2">
+      <div><p class="section-title">종목별 수익률</p><div id="hd-bars"></div></div>
+      <div><p class="section-title">일별 평균 수익률 추이</p><div class="chart-wrap"><canvas id="hd-line" role="img" aria-label="F6_HD 일별 수익률"></canvas></div></div>
+    </div>
+  </div>
+  <div id="tab-compare" style="display:none">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">
+      <div class="metric-card" style="border-left:3px solid #e24b4a"><p class="metric-label">F6 수익률</p><p class="metric-value pos" id="cmp-f6">-</p></div>
+      <div class="metric-card" style="border-left:3px solid #378add"><p class="metric-label">F6_HD 수익률</p><p class="metric-value" id="cmp-hd">-</p></div>
+    </div>
+    <p class="section-title">F6 vs F6_HD 일별 수익률 비교</p>
+    <div class="compare-wrap"><canvas id="cmp-chart" role="img" aria-label="F6 vs F6_HD 비교"></canvas></div>
+    <div class="legend">
+      <span><span class="legend-dot" style="background:#e24b4a"></span>F6</span>
+      <span><span class="legend-dot" style="background:#378add"></span>F6_HD</span>
+    </div>
+  </div>
+</div>
+<script>
+const DATES=["04/13", "04/14", "04/15", "04/16", "04/17", "04/20", "04/21"],F6={"codes": ["A000660", "A108860", "A005930", "A361610", "A141080", "A015760", "A011790", "A302440", "A207940", "A340570"], "names": ["SK하이닉스", "셀바스AI", "삼성전자", "SK아이이테크놀로지", "리가켐바이오", "한국전력", "SKC", "SK바이오사이언스", "삼성바이오로직스", "티앤엘"], "prices": [[1040000, 1103000, 1136000, 1155000, 1128000, 1166000, 1224000], [13140, 13470, 13380, 15230, 14290, 14210, 14130], [201000, 206500, 211000, 217500, 216000, 214500, 219000], [22850, 22700, 22950, 23650, 24200, 24700, 26650], [188800, 181000, 193000, 198000, 197400, 200000, 194100], [42200, 44350, 44350, 45800, 45900, 46100, 46000], [96000, 96800, 99800, 122000, 113700, 108900, 110300], [41650, 42200, 43850, 44650, 46600, 44750, 44200], [1550000, 1536000, 1602000, 1616000, 1601000, 1605000, 1588000], [57300, 57100, 59600, 63400, 65500, 63800, 61300]]},HD={"codes": ["A009450", "A257720", "A259960", "A067160", "A195940", "A071050", "A008770", "A005850", "A041510", "A066970"], "names": ["경동나비엔", "실리콘투", "크래프톤", "SOOP", "HK이노엔", "한국금융지주", "호텔신라", "에스엘", "에스엠", "엘앤에프"], "prices": [[69500, 69600, 69100, 70000, 69600, 68300, 68700], [46900, 46350, 46800, 46900, 47100, 47150, 48700], [241500, 239000, 244000, 256500, 263500, 261500, 255000], [58800, 59600, 60100, 60600, 60100, 60100, 60100], [48500, 48600, 52400, 52900, 52300, 51400, 51800], [246000, 257500, 255000, 257000, 257000, 261000, 262000], [48550, 48550, 49850, 53800, 52900, 53300, 53900], [55300, 58100, 58500, 60200, 61200, 61000, 64900], [85800, 88000, 90900, 97000, 94700, 93000, 92200], [181700, 173400, 170600, 169500, 185600, 183700, 196400]]};
+function calcReturns(p){return p.prices.map(r=>(r[r.length-1]-r[0])/r[0]*100)}
+function calcDailyAvg(p){return DATES.map((_,di)=>parseFloat((p.prices.reduce((s,r)=>s+(r[di]-r[0])/r[0]*100,0)/p.prices.length).toFixed(2)))}
+function fmtRet(v){return(v>=0?'+':'')+v.toFixed(2)+'%'}
+function renderBars(id,p,rets){const max=Math.max(...rets.map(Math.abs));document.getElementById(id).innerHTML=rets.map((r,i)=>({r,i})).sort((a,b)=>b.r-a.r).map(({r,i})=>`<div class="stock-row"><span class="stock-code">${p.codes[i].replace('A',(x,o)=>o===0?'':'A')}</span><span class="stock-name">${p.names[i]}</span><div class="bar-bg"><div class="bar-fill" style="width:${Math.abs(r)/max*100}%;background:${r>=0?'#e24b4a':'#378add'}"></div></div><span class="stock-ret ${r>=0?'pos':'neg'}"> ${fmtRet(r)}</span></div>`).join('')}
+function renderMetrics(px,p,rets){const avg=rets.reduce((a,b)=>a+b,0)/rets.length,el=document.getElementById(px+'-total');el.textContent=fmtRet(avg);el.className='metric-value '+(avg>=0?'pos':'neg');const bi=rets.indexOf(Math.max(...rets)),wi=rets.indexOf(Math.min(...rets));document.getElementById(px+'-best').textContent=p.names[bi];document.getElementById(px+'-best-ret').textContent=fmtRet(rets[bi]);document.getElementById(px+'-worst').textContent=p.names[wi];document.getElementById(px+'-worst-ret').textContent=fmtRet(rets[wi]);const up=rets.filter(r=>r>=0).length;document.getElementById(px+'-updown').textContent=up+' / '+(rets.length-up)}
+const f6r=calcReturns(F6),hdr=calcReturns(HD),f6d=calcDailyAvg(F6),hdd=calcDailyAvg(HD);
+renderMetrics('f6',F6,f6r);renderMetrics('hd',HD,hdr);renderBars('f6-bars',F6,f6r);renderBars('hd-bars',HD,hdr);
+const f6a=f6r.reduce((a,b)=>a+b,0)/f6r.length,hda=hdr.reduce((a,b)=>a+b,0)/hdr.length;
+document.getElementById('cmp-f6').textContent=fmtRet(f6a);document.getElementById('cmp-f6').className='metric-value '+(f6a>=0?'pos':'neg');
+document.getElementById('cmp-hd').textContent=fmtRet(hda);document.getElementById('cmp-hd').className='metric-value '+(hda>=0?'pos':'neg');
+const sc={x:{ticks:{font:{size:11},autoSkip:false},grid:{color:'rgba(0,0,0,0.06)'}},y:{ticks:{font:{size:11},callback:v=>v.toFixed(1)+'%'},grid:{color:'rgba(0,0,0,0.06)'}}}
+function mkLine(id,data,color){new Chart(document.getElementById(id),{type:'line',data:{labels:DATES,datasets:[{data,borderColor:color,backgroundColor:color+'22',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:color,borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc}})}
+function mkCompare(){new Chart(document.getElementById('cmp-chart'),{type:'line',data:{labels:DATES,datasets:[{label:'F6',data:f6d,borderColor:'#e24b4a',backgroundColor:'#e24b4a22',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#e24b4a',borderWidth:2},{label:'F6_HD',data:hdd,borderColor:'#378add',backgroundColor:'#378add22',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#378add',borderWidth:2,borderDash:[4,3]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:sc}})}
+const ci={F6:false,F6_HD:false,compare:false};
+function switchTab(t){'F6,F6_HD,compare'.split(',').forEach(x=>document.getElementById('tab-'+x).style.display=x===t?'' : 'none');document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['F6','F6_HD','compare'][i]===t));if(t==='F6'&&!ci.F6){mkLine('f6-line',f6d,'#e24b4a');ci.F6=true}if(t==='F6_HD'&&!ci.F6_HD){mkLine('hd-line',hdd,'#378add');ci.F6_HD=true}if(t==='compare'&&!ci.compare){mkCompare();ci.compare=true}}
+mkLine('f6-line',f6d,'#e24b4a');ci.F6=true;
+</script>
+</body></html>
